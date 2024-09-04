@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conversor RGB para HSL e CMY(K)</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 20px;
+        }
+        .slider-container {
+            width: 300px;
+            margin-bottom: 20px;
+        }
+        #color-box {
+            width: 100px;
+            height: 100px;
+            margin: 20px 0;
+            border: 1px solid #000;
+        }
+        #image-container {
+            margin: 20px 0;
+        }
+        #image-container img {
+            max-width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Conversor RGB para HSL e CMY(K)</h1>
+
+    <!-- Sliders para RGB -->
+    <div class="slider-container">
+        <label for="red">R:</label>
+        <input type="range" id="red" min="0" max="255" value="128" oninput="updateColor()">
+        <span id="red-value">128</span>
+    </div>
+    <div class="slider-container">
+        <label for="green">G:</label>
+        <input type="range" id="green" min="0" max="255" value="128" oninput="updateColor()">
+        <span id="green-value">128</span>
+    </div>
+    <div class="slider-container">
+        <label for="blue">B:</label>
+        <input type="range" id="blue" min="0" max="255" value="128" oninput="updateColor()">
+        <span id="blue-value">128</span>
+    </div>
+
+    <!-- Caixa de cor -->
+    <div id="color-box"></div>
+
+    <!-- Parágrafos para mostrar HSL e CMY(K) -->
+    <p id="hsl-value">HSL: </p>
+    <p id="cmyk-value">CMY(K): </p>
+
+    <!-- Área para carregar e exibir imagem -->
+    <input type="file" id="image-loader" accept="image/*" onchange="loadImage(event)">
+    <div id="image-container">
+        <img id="uploaded-image" src="" alt="Imagem carregada">
+    </div>
+
+    <!-- Sliders para ajustar Saturação (S) e Valor (V) -->
+    <div class="slider-container">
+        <label for="saturation">Saturação (S):</label>
+        <input type="range" id="saturation" min="0" max="100" value="100" oninput="adjustImage()">
+        <span id="saturation-value">100%</span>
+    </div>
+    <div class="slider-container">
+        <label for="value">Valor (V):</label>
+        <input type="range" id="value" min="0" max="100" value="100" oninput="adjustImage()">
+        <span id="value-value">100%</span>
+    </div>
+
+    <script>
+        function updateColor() {
+            const r = document.getElementById('red').value;
+            const g = document.getElementById('green').value;
+            const b = document.getElementById('blue').value;
+
+            document.getElementById('red-value').textContent = r;
+            document.getElementById('green-value').textContent = g;
+            document.getElementById('blue-value').textContent = b;
+
+            const rgb = `rgb(${r}, ${g}, ${b})`;
+            document.getElementById('color-box').style.backgroundColor = rgb;
+
+            // Conversão RGB para HSL
+            const hsl = rgbToHsl(r, g, b);
+            document.getElementById('hsl-value').textContent = `HSL: ${hsl}`;
+
+            // Conversão RGB para CMY(K)
+            const cmyk = rgbToCmyk(r, g, b);
+            document.getElementById('cmyk-value').textContent = `CMY(K): ${cmyk}`;
+        }
+
+        function rgbToHsl(r, g, b) {
+            r /= 255;
+            g /= 255;
+            b /= 255;
+            const max = Math.max(r, g, b);
+            const min = Math.min(r, g, b);
+            let h, s, l = (max + min) / 2;
+
+            if (max === min) {
+                h = s = 0; // achromatic
+            } else {
+                const d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                switch (max) {
+                    case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                    case g: h = (b - r) / d + 2; break;
+                    case b: h = (r - g) / d + 4; break;
+                }
+                h /= 6;
+            }
+
+            return `${(h * 360).toFixed(0)}°, ${(s * 100).toFixed(0)}%, ${(l * 100).toFixed(0)}%`;
+        }
+
+        function rgbToCmyk(r, g, b) {
+            const c = 1 - (r / 255);
+            const m = 1 - (g / 255);
+            const y = 1 - (b / 255);
+            const k = Math.min(c, m, y);
+            const cmykC = ((c - k) / (1 - k)) * 100;
+            const cmykM = ((m - k) / (1 - k)) * 100;
+            const cmykY = ((y - k) / (1 - k)) * 100;
+            const cmykK = k * 100;
+
+            return `${cmykC.toFixed(0)}%, ${cmykM.toFixed(0)}%, ${cmykY.toFixed(0)}%, ${cmykK.toFixed(0)}%`;
+        }
+
+        function loadImage(event) {
+            const image = document.getElementById('uploaded-image');
+            image.src = URL.createObjectURL(event.target.files[0]);
+            image.onload = () => URL.revokeObjectURL(image.src); // release memory
+        }
+
+        function adjustImage() {
+            const saturation = document.getElementById('saturation').value;
+            const value = document.getElementById('value').value;
+
+            document.getElementById('saturation-value').textContent = `${saturation}%`;
+            document.getElementById('value-value').textContent = `${value}%`;
+
+            const image = document.getElementById('uploaded-image');
+            image.style.filter = `saturate(${saturation}%) brightness(${value}%)`;
+        }
+
+        // Inicializa a cor
+        updateColor();
+    </script>
+</body>
+</html>
